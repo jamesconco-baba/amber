@@ -65,10 +65,25 @@ export interface GuidedPrompt {
   question: string;
 }
 
+export interface FamilyMember {
+  id: string;
+  name: string;
+  relationship: string; // free label: "Father", "Me", "Daughter", "Grandchild"
+  parentId?: string; // links to another FamilyMember (their parent in the tree)
+  partnerName?: string; // spouse/partner shown alongside this node
+  birthYear?: string;
+  deathYear?: string;
+  note?: string;
+  beneficiaryId?: string; // optional link to a Legacy Circle member
+  contentIds: string[]; // memories linked to this person
+  createdAt: string;
+}
+
 export interface VBTData {
   profile: Profile | null;
   beneficiaries: Beneficiary[];
   content: ContentItem[];
   messages: ScheduledMessage[];
+  family: FamilyMember[];
   onboarded: boolean;
 }

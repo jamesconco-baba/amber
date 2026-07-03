@@ -51,6 +51,12 @@ and `/api/books`) and is never exposed to the browser. Without it, the AI screen
 friendly "connect the AI" notice and the rest of the app works normally. The assistant
 uses `claude-sonnet-5` and answers strictly from content you've marked for AI use.
 
+### 3c. Enable the Family Tree
+Run [`supabase/migration_family.sql`](./supabase/migration_family.sql) in the SQL Editor
+(adds the `family_members` table with row-level security). The Family Tree and the
+"By theme" grouping in Memories then work end to end. Memories&apos; "By person" and "By
+time" views need no migration and work immediately.
+
 ### 4. (Optional) Turn off email confirmation for faster testing
 Supabase → **Authentication → Providers → Email** → toggle **Confirm email** off. With it
 off, sign-up logs you straight in. With it on, sign-up sends a confirmation link and the

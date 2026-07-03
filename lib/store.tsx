@@ -17,6 +17,7 @@ import {
   Beneficiary,
   ContentItem,
   ScheduledMessage,
+  FamilyMember,
 } from "./types";
 
 // ---------------------------------------------------------------------------
@@ -32,6 +33,7 @@ const EMPTY: VBTData = {
   beneficiaries: [],
   content: [],
   messages: [],
+  family: [],
   onboarded: false,
 };
 
@@ -58,7 +60,7 @@ async function loadAll(
   userId: string,
   email: string
 ): Promise<VBTData> {
-  const [profileRes, benRes, contentRes, msgRes] = await Promise.all([
+  const [profileRes, benRes, contentRes, msgRes, famRes] = await Promise.all([
     supabase.from("profiles").select("*").eq("id", userId).maybeSingle(),
     supabase.from("beneficiaries").select("*").eq("user_id", userId).order("created_at"),
     supabase
@@ -71,6 +73,7 @@ async function loadAll(
       .select("*")
       .eq("user_id", userId)
       .order("created_at", { ascending: false }),
+    supabase.from("family_members").select("*").eq("user_id", userId).order("created_at"),
   ]);
 
   const contentRows = contentRes.data ?? [];
@@ -136,6 +139,19 @@ async function loadAll(
       status: m.status,
       createdAt: m.created_at,
     })),
+    family: (famRes.data ?? []).map((f) => ({
+      id: f.id,
+      name: f.name,
+      relationship: f.relationship ?? "",
+      parentId: f.parent_id ?? undefined,
+      partnerName: f.partner_name ?? undefined,
+      birthYear: f.birth_year ?? undefined,
+      deathYear: f.death_year ?? undefined,
+      note: f.note ?? undefined,
+      beneficiaryId: f.beneficiary_id ?? undefined,
+      contentIds: f.content_ids ?? [],
+      createdAt: f.created_at,
+    })),
   };
 }
 
@@ -154,6 +170,9 @@ interface StoreShape {
   addMessage: (m: Omit<ScheduledMessage, "id" | "createdAt">) => Promise<void>;
   updateMessage: (id: string, patch: Partial<ScheduledMessage>) => Promise<void>;
   removeMessage: (id: string) => Promise<void>;
+  addFamilyMember: (f: Omit<FamilyMember, "id" | "createdAt">) => Promise<void>;
+  updateFamilyMember: (id: string, patch: Partial<FamilyMember>) => Promise<void>;
+  removeFamilyMember: (id: string) => Promise<void>;
   signOut: () => Promise<void>;
   reset: () => Promise<void>;
 }
@@ -315,6 +334,44 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         await supabase.from("scheduled_messages").delete().eq("id", id);
         await refresh();
       },
+      addFamilyMember: async (f) => {
+        const { supabase, userId } = requireAuth();
+        await supabase.from("family_members").insert({
+          user_id: userId,
+          name: f.name,
+          relationship: f.relationship,
+          parent_id: f.parentId ?? null,
+          partner_name: f.partnerName ?? null,
+          birth_year: f.birthYear ?? null,
+          death_year: f.deathYear ?? null,
+          note: f.note ?? null,
+          beneficiary_id: f.beneficiaryId ?? null,
+          content_ids: f.contentIds ?? [],
+        });
+        await refresh();
+      },
+      updateFamilyMember: async (id, patch) => {
+        const { supabase } = requireAuth();
+        const row: Record<string, unknown> = {};
+        if (patch.name !== undefined) row.name = patch.name;
+        if (patch.relationship !== undefined) row.relationship = patch.relationship;
+        if (patch.parentId !== undefined) row.parent_id = patch.parentId ?? null;
+        if (patch.partnerName !== undefined) row.partner_name = patch.partnerName ?? null;
+        if (patch.birthYear !== undefined) row.birth_year = patch.birthYear ?? null;
+        if (patch.deathYear !== undefined) row.death_year = patch.deathYear ?? null;
+        if (patch.note !== undefined) row.note = patch.note ?? null;
+        if (patch.beneficiaryId !== undefined) row.beneficiary_id = patch.beneficiaryId ?? null;
+        if (patch.contentIds !== undefined) row.content_ids = patch.contentIds;
+        await supabase.from("family_members").update(row).eq("id", id);
+        await refresh();
+      },
+      removeFamilyMember: async (id) => {
+        const { supabase } = requireAuth();
+        // Detach children first so we don't orphan the tree via FK restriction.
+        await supabase.from("family_members").update({ parent_id: null }).eq("parent_id", id);
+        await supabase.from("family_members").delete().eq("id", id);
+        await refresh();
+      },
       signOut: async () => {
         if (supabase) await supabase.auth.signOut();
         setData(EMPTY);
@@ -325,6 +382,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           supabase.from("scheduled_messages").delete().eq("user_id", userId),
           supabase.from("content_items").delete().eq("user_id", userId),
           supabase.from("beneficiaries").delete().eq("user_id", userId),
+          supabase.from("family_members").delete().eq("user_id", userId),
         ]);
         await supabase.from("profiles").upsert({ id: userId, onboarded: false });
         await refresh();
