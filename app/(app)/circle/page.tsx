@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useStore } from "@/lib/store";
 import {
   PageHeader,
@@ -48,7 +49,14 @@ export default function Circle() {
         eyebrow="Legacy Circle"
         title="The people you're preserving for"
         subtitle="Your circle defines who can receive what you leave, and when. You stay in control of every rule."
-        action={<Button onClick={() => setOpen(true)}>Add someone</Button>}
+        action={
+          <div className="flex gap-2">
+            <Link href="/inheritance">
+              <Button variant="outline">Inheritance & release</Button>
+            </Link>
+            <Button onClick={() => setOpen(true)}>Add someone</Button>
+          </div>
+        }
       />
 
       {data.beneficiaries.length === 0 ? (

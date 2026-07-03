@@ -12,7 +12,10 @@ const NAV = [
   { href: "/vault", label: "Vault", glyph: "❑" },
   { href: "/messenger", label: "Messenger", glyph: "✦" },
   { href: "/timeline", label: "Timeline", glyph: "❘" },
+  { href: "/assistant", label: "Legacy Assistant", glyph: "❋" },
+  { href: "/books", label: "Books", glyph: "❧" },
   { href: "/circle", label: "Legacy Circle", glyph: "❍" },
+  { href: "/inheritance", label: "Inheritance", glyph: "⚵" },
   { href: "/settings", label: "Settings", glyph: "⚙" },
 ];
 
@@ -98,14 +101,14 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       </main>
 
       {/* Mobile bottom nav */}
-      <nav className="fixed inset-x-0 bottom-0 z-40 flex items-center justify-around border-t border-ink/10 bg-parchment-card px-2 py-2 lg:hidden">
-        {NAV.slice(0, 5).map((n) => {
+      <nav className="fixed inset-x-0 bottom-0 z-40 flex items-center gap-1 overflow-x-auto border-t border-ink/10 bg-parchment-card px-2 py-2 lg:hidden">
+        {NAV.map((n) => {
           const active = pathname === n.href;
           return (
             <Link
               key={n.href}
               href={n.href}
-              className={`flex flex-col items-center gap-0.5 rounded-lg px-3 py-1 text-[11px] ${
+              className={`flex shrink-0 flex-col items-center gap-0.5 rounded-lg px-3 py-1 text-[11px] ${
                 active ? "text-clay" : "text-sage"
               }`}
             >

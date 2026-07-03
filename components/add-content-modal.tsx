@@ -26,6 +26,7 @@ export function AddContentModal({
   const [audio, setAudio] = useState<RecordedAudio | null>(null);
   const [file, setFile] = useState<{ dataUrl: string; mime: string; name: string } | null>(null);
   const [beneficiaryIds, setBeneficiaryIds] = useState<string[]>([]);
+  const [aiConsent, setAiConsent] = useState(true);
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
 
@@ -39,6 +40,7 @@ export function AddContentModal({
     setAudio(null);
     setFile(null);
     setBeneficiaryIds([]);
+    setAiConsent(true);
     setError("");
   };
 
@@ -85,6 +87,7 @@ export function AddContentModal({
         tags: tags.split(",").map((t) => t.trim()).filter(Boolean).concat(presetPrompt ? [presetPrompt.category] : []),
         beneficiaryIds,
         promptId: presetPrompt?.id,
+        aiConsent,
         media,
       });
       setSaving(false);
@@ -206,6 +209,21 @@ export function AddContentModal({
         )}
 
         {error && <p className="text-sm text-clay">{error}</p>}
+
+        <label className="flex items-start gap-3 rounded-xl border border-ink/10 bg-parchment/50 p-3.5">
+          <input
+            type="checkbox"
+            checked={aiConsent}
+            onChange={(e) => setAiConsent(e.target.checked)}
+            className="mt-0.5 h-4 w-4 accent-[#BE873B]"
+          />
+          <span className="text-sm text-ink/75">
+            <span className="font-medium text-ink">Include in the AI Legacy Assistant</span>
+            <br />
+            Let your family ask questions grounded in this memory. You can turn this off for
+            anything private; it changes nothing about who receives the memory itself.
+          </span>
+        </label>
 
         <div className="flex justify-end gap-2 pt-2">
           <Button variant="ghost" onClick={close}>

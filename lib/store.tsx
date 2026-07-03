@@ -113,6 +113,7 @@ async function loadAll(
       tags: c.tags ?? [],
       beneficiaryIds: c.beneficiary_ids ?? [],
       promptId: c.prompt_id ?? undefined,
+      aiConsent: c.ai_consent ?? true,
       createdAt: c.created_at,
       media: c.media_path
         ? {
@@ -268,6 +269,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           tags: c.tags,
           beneficiary_ids: c.beneficiaryIds,
           prompt_id: c.promptId ?? null,
+          ai_consent: c.aiConsent ?? true,
           media_path,
           media_mime: c.media?.mimeType ?? null,
           media_filename: c.media?.fileName ?? null,

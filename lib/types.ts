@@ -42,6 +42,7 @@ export interface ContentItem {
     durationSec?: number;
   };
   promptId?: string; // if created from a guided prompt
+  aiConsent?: boolean; // include in the AI Legacy Assistant (default true)
   createdAt: string;
 }
 

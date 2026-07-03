@@ -37,6 +37,20 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-public-key
 
 The anon key is meant to be public; row-level security is what protects the data.
 
+### 3b. Enable the AI layer (Legacy Assistant, Guardian, Books)
+Run [`supabase/migration_ai.sql`](./supabase/migration_ai.sql) in the SQL Editor (adds
+per-item AI consent + an interaction log). Then add your Anthropic key to `.env.local`
+and to Vercel's environment variables:
+
+```
+ANTHROPIC_API_KEY=sk-ant-...
+```
+
+Get one at console.anthropic.com. The key is used only server-side (in `/api/assistant`
+and `/api/books`) and is never exposed to the browser. Without it, the AI screens show a
+friendly "connect the AI" notice and the rest of the app works normally. The assistant
+uses `claude-sonnet-5` and answers strictly from content you've marked for AI use.
+
 ### 4. (Optional) Turn off email confirmation for faster testing
 Supabase → **Authentication → Providers → Email** → toggle **Confirm email** off. With it
 off, sign-up logs you straight in. With it on, sign-up sends a confirmation link and the
@@ -105,3 +119,16 @@ supabase/schema.sql       Tables, RLS, storage bucket + policies
 6. Sign out (Settings), sign back in — everything persists.
 7. In Supabase → Table editor, confirm rows appear only for your user; Storage → `vault`
    shows files under your user-id folder.
+
+## Build stages beyond MVP
+
+The full functional breakdown of every module/feature/function in the concept doc is in
+[`docs/FUNCTIONAL_BUILD_SPEC.md`](./docs/FUNCTIONAL_BUILD_SPEC.md), with a build sequence.
+
+**Stage 1 — Inheritance & Reconciliation (now included).** Adds the Executor & Inheritance
+module: recipients with redundant contacts + stewards, age floors, executors, life-event
+verification with a 14-day grace period, dispute/cancel, an audit log, and claim-invitation
+links (with a `/claim/[token]` landing). To enable it, run
+[`supabase/schema-inheritance.sql`](./supabase/schema-inheritance.sql) in your Supabase SQL
+Editor (after the original `schema.sql`). The complete target schema for the whole platform
+is in [`supabase/schema-full.sql`](./supabase/schema-full.sql) for reference.
