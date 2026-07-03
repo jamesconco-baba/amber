@@ -77,7 +77,19 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       {/* Mobile top bar */}
       <div className="flex items-center justify-between border-b border-ink/10 bg-ink px-5 py-3.5 lg:hidden">
         <Logo light />
-        <span className="text-sm text-parchment/60">{firstName}</span>
+        <Link
+          href="/settings"
+          className={`flex items-center gap-2 rounded-full px-3 py-1.5 text-sm transition-colors ${
+            pathname === "/settings"
+              ? "bg-parchment/15 text-parchment"
+              : "text-parchment/70 hover:bg-parchment/10"
+          }`}
+        >
+          <span className="grid h-6 w-6 place-items-center rounded-full bg-parchment/15 text-xs font-medium text-amber-soft">
+            {firstName.charAt(0).toUpperCase()}
+          </span>
+          {firstName}
+        </Link>
       </div>
 
       {/* Content */}
