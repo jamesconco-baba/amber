@@ -18,6 +18,7 @@ const NAV = [
   { href: "/family", label: "Family Tree", glyph: "⚶" },
   { href: "/circle", label: "Legacy Circle", glyph: "❍" },
   { href: "/inheritance", label: "Inheritance", glyph: "⚵" },
+  { href: "/guide", label: "How to Use", glyph: "❓" },
   { href: "/settings", label: "Settings", glyph: "⚙" },
 ];
 

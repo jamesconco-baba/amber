@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useStore } from "@/lib/store";
 import { PageHeader, Card, Button, Field, Modal, inputClass } from "@/components/ui";
@@ -66,13 +67,18 @@ export default function Settings() {
         </Card>
 
         <Card className="p-6">
-          <h2 className="mb-2 font-display text-lg text-ink">On the roadmap</h2>
-          <ul className="space-y-1.5 text-[15px] text-ink/70">
-            <li>· AI Legacy Assistant, grounded only in what you recorded</li>
-            <li>· AI Legacy Guardian safety review on every response</li>
-            <li>· Consent-gated voice narration of your own words</li>
-            <li>· Executor tools and multi-party inheritance verification</li>
-          </ul>
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <h2 className="mb-1 font-display text-lg text-ink">New here, or need a hand?</h2>
+              <p className="text-[15px] leading-relaxed text-ink/70">
+                The How to Use guide walks through everything — recording, scheduling
+                messages, your Legacy Circle, inheritance, and the AI features.
+              </p>
+            </div>
+            <Link href="/guide">
+              <Button variant="outline">Open the guide</Button>
+            </Link>
+          </div>
         </Card>
 
         <Card className="border-clay/30 p-6">
