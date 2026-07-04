@@ -1,4 +1,4 @@
--- Voice Beyond Time — FULL PLATFORM SCHEMA (reference)
+-- Amber — FULL PLATFORM SCHEMA (reference)
 -- Covers every entity in the concept document's data model (§21), expanded with the
 -- recipient/steward reconciliation model. This is the target schema for the whole
 -- platform. For the current build stage, run schema-inheritance.sql (a subset).

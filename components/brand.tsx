@@ -26,22 +26,27 @@ export function Waveform({
   );
 }
 
-export function Logo({ light = false }: { light?: boolean }) {
+export function Logo({ light = false, tagline = false }: { light?: boolean; tagline?: boolean }) {
   return (
     <div className="flex items-center gap-2.5">
-      <span
-        className={`grid h-8 w-8 place-items-center rounded-full ${
-          light ? "bg-parchment/15 text-amber-soft" : "bg-ink text-amber-soft"
-        }`}
-      >
+      <span className="grid h-8 w-8 place-items-center rounded-full bg-amber text-ink">
         <Waveform bars={5} className="!h-4 !gap-[2px]" />
       </span>
-      <span
-        className={`font-display text-[17px] font-medium tracking-tight ${
-          light ? "text-parchment" : "text-ink"
-        }`}
-      >
-        Voice Beyond Time
+      <span className="flex flex-col leading-none">
+        <span
+          className={`font-display text-[17px] font-medium tracking-tight ${
+            light ? "text-parchment" : "text-ink"
+          }`}
+        >
+          Amber
+        </span>
+        {tagline && (
+          <span
+            className={`mt-1 text-[11px] tracking-wide ${light ? "text-parchment/55" : "text-sage"}`}
+          >
+            Voice beyond time
+          </span>
+        )}
       </span>
     </div>
   );

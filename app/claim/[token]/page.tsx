@@ -28,7 +28,7 @@ export default function Claim({ params }: { params: { token: string } }) {
           <span className="italic text-amber">waiting for you.</span>
         </h1>
         <p className="mt-5 max-w-md text-[15px] leading-relaxed text-ink/70">
-          A loved one preserved messages and memories for you through Voice Beyond Time, to
+          A loved one preserved messages and memories for you through Amber, to
           reach you when the time was right. That time has come.
         </p>
 

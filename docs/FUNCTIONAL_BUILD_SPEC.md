@@ -1,4 +1,4 @@
-# Voice Beyond Time — Functional Build Specification
+# Amber — Functional Build Specification
 
 A complete, no-omission breakdown of every module, feature, function, linkage, and
 process described in the concept document (v1.0), each mapped to a concrete build unit
@@ -16,16 +16,16 @@ and status.
 
 | # | Module | Function | Status |
 |---|--------|----------|--------|
-| 1 | **VBT Vault** | Secure storage for voice, video, photos, documents, letters, journals, memories. | ✅ |
-| 2 | **VBT Timeline** | Chronological life story auto-built from preserved content. | ✅ |
-| 3 | **VBT Messenger** | Scheduled messages for birthdays, graduations, weddings, anniversaries, milestones. | ✅ |
-| 4 | **VBT AI** | AI interaction grounded exclusively in the creator's recorded legacy. | 🟡 UI / 🔵 grounding |
-| 5 | **VBT Guardian** | Ethical + safety engine governing every AI interaction. | 🟡 |
-| 6 | **VBT Family Tree** | Living, expandable multi-generational family history. | 🟡 |
-| 7 | **VBT Books** | AI-assisted biographies/memoirs/family-history books from content. | 🔵 |
-| 8 | **VBT Time Capsule** | Content locked until a future date or triggering event. | 🟡 (rules exist ✅) |
-| 9 | **VBT Executor** | Digital inheritance management + beneficiary access administration. | 🟡 (this stage) |
-| 10 | **VBT Memories** | AI-organized collections of photos/videos/stories by theme/date/person. | 🟡 |
+| 1 | **Amber Vault** | Secure storage for voice, video, photos, documents, letters, journals, memories. | ✅ |
+| 2 | **Amber Timeline** | Chronological life story auto-built from preserved content. | ✅ |
+| 3 | **Amber Messenger** | Scheduled messages for birthdays, graduations, weddings, anniversaries, milestones. | ✅ |
+| 4 | **Amber AI** | AI interaction grounded exclusively in the creator's recorded legacy. | 🟡 UI / 🔵 grounding |
+| 5 | **Amber Guardian** | Ethical + safety engine governing every AI interaction. | 🟡 |
+| 6 | **Amber Family Tree** | Living, expandable multi-generational family history. | 🟡 |
+| 7 | **Amber Books** | AI-assisted biographies/memoirs/family-history books from content. | 🔵 |
+| 8 | **Amber Time Capsule** | Content locked until a future date or triggering event. | 🟡 (rules exist ✅) |
+| 9 | **Amber Executor** | Digital inheritance management + beneficiary access administration. | 🟡 (this stage) |
+| 10 | **Amber Memories** | AI-organized collections of photos/videos/stories by theme/date/person. | 🟡 |
 
 ---
 
@@ -93,7 +93,7 @@ enforced at the data layer (row-level security) and UI layer.
 | AI Legacy Guardian | grounding check, age-appropriateness, harm block, sensitive-topic softening, audit log | 🟡/🔵 |
 | Time Capsule | lock content to future date/event, sealed-until display, unlock on trigger | 🟡 |
 | Digital Executor Tools | trigger conditions, verification steps, beneficiary access states, release audit log | 🟡 (this stage) |
-| VBT Books | compile memoir/biography from content, order/print | 🔵 |
+| Amber Books | compile memoir/biography from content, order/print | 🔵 |
 
 ---
 
@@ -135,7 +135,7 @@ Functions: `addRecipient`, `addRecipientContact`, `addSteward`, `attachContentTo
 
 ## Part 6 — AI Legacy Assistant & Guardian (§11–13, §19–20)
 
-### 6.1 Assistant (VBT AI)
+### 6.1 Assistant (Amber AI)
 - Trained/grounded **only** on the specific creator's consented content; no internet, no
   cross-family data. `buildPrivateIndex(creatorId)` 🔵, `groundedAnswer` 🔵.
 - Capabilities: answer from recorded content; surface relevant memories/letters; synthesize
@@ -143,7 +143,7 @@ Functions: `addRecipient`, `addRecipientContact`, `addSteward`, `attachContentTo
 - Boundaries: never fabricate opinions/memories; never simulate a living person without
   persistent AI labeling; decline out-of-scope questions rather than guess.
 
-### 6.2 Guardian (VBT Guardian) — every response routed through it
+### 6.2 Guardian (Amber Guardian) — every response routed through it
 - `verifyGrounding` — response tied to real content, nothing invented. 🟡 checks / 🔵 model
 - `screenAgeAppropriate(beneficiaryProfile)`. 🟡
 - `blockHarmful` — harmful/manipulative/exploitative outputs. 🟡/🔵
@@ -224,7 +224,7 @@ Full SQL for every entity is in `supabase/schema-full.sql`.
 
 ## Part 11 — Business, plans, GTM (§23–27) — product functions
 - Subscription tiers: Starter / Family / Legacy Plus / Advisor. `enforcePlanLimits`, `upgradePlan`. 🟡
-- One-time: VBT Books purchase/print. 🔵
+- One-time: Amber Books purchase/print. 🔵
 - Add-ons: voice-clone credits, expedited verification, extra storage. 🟡 (metering) / 🔵 (services)
 - KPIs (§30): monthly active creators, items/user, beneficiary activation rate, retention/churn,
   Guardian intervention rate, NPS. `analyticsEvents` 🟡.
@@ -237,7 +237,7 @@ Full SQL for every entity is in `supabase/schema-full.sql`.
 2. **Family Tree Builder** (nodes, relationships, link content).
 3. **Time Capsule UI + Messenger calendar view** (surface existing rules; life-event trigger UI).
 4. **AI Legacy Assistant (beneficiary view) + Guardian labeling** (grounded prompt scaffold; wire to creator's content; source citations; audit log). Real grounding needs the retrieval index + LLM key.
-5. **VBT Memories** (auto-collections by theme/date/person).
+5. **Amber Memories** (auto-collections by theme/date/person).
 6. **Content lifecycle** (edit/replace/archive; categories; journals).
 7. **Subscriptions & plan gating**; **Notifications/reminders**.
 8. **Security/consent surface** (per-item AI consent, voice-clone consent gate, MFA, data export/delete).

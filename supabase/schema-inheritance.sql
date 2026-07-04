@@ -1,4 +1,4 @@
--- Voice Beyond Time — Inheritance & Reconciliation stage migration
+-- Amber — Inheritance & Reconciliation stage migration
 -- Run this AFTER the original supabase/schema.sql. Adds the recipient/steward model,
 -- executors, verification events, audit log, and claim tokens. Safe to re-run.
 

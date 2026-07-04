@@ -1,4 +1,4 @@
-# Voice Beyond Time — Web MVP
+# Amber — Web MVP
 
 A digital legacy preservation platform. Preserve your voice, letters, photos, and
 documents, and release them to the people you love on a date or a life milestone.
@@ -83,7 +83,11 @@ If the env vars are missing, the app shows a setup notice instead of crashing.
 1. Push this folder to a GitHub repo.
 2. vercel.com → Add New → Project → import the repo.
 3. In the project's **Settings → Environment Variables**, add the same two
-   `NEXT_PUBLIC_SUPABASE_*` values. Deploy.
+   `NEXT_PUBLIC_SUPABASE_*` values (and `ANTHROPIC_API_KEY`). Deploy.
+4. Add your custom domain **theamberapp.com** in Vercel → Settings → Domains.
+5. In Supabase → **Authentication → URL Configuration**, set the **Site URL** to
+   `https://theamberapp.com` and add it to **Redirect URLs**, so confirmation and
+   auth links resolve to the live site.
 
 Voice recording needs HTTPS; Vercel provides it (and `localhost` counts as secure in dev).
 

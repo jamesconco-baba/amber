@@ -44,8 +44,9 @@ export default function Landing() {
               <span className="italic text-amber">A legacy that lives on.</span>
             </h1>
             <p className="mt-6 max-w-md text-lg leading-relaxed text-ink/70">
-              Preserve your stories and messages — and deliver them to the people you love,
-              exactly when they&apos;ll matter most.
+              Like amber keeps a living moment for millennia, Amber preserves your stories
+              and messages — and delivers them to the people you love, exactly when
+              they&apos;ll matter most.
             </p>
             <div className="mt-8 flex flex-wrap items-center gap-3">
               <Button onClick={enter}>{signedIn ? "Open my vault" : "Start preserving"}</Button>
@@ -141,7 +142,7 @@ export default function Landing() {
               { glyph: "✎", name: "Automatic transcription", desc: "Every recording turned into searchable, quotable text, ready for the assistant and your memoir." },
               { glyph: "❖", name: "Advisor & Family Office", desc: "Multi-client tools for estate planners, with the compliance and audit trails succession work needs." },
               { glyph: "⬡", name: "End-to-end encryption & MFA", desc: "Zero-knowledge options and multi-factor sign-in for the most sensitive legacies." },
-              { glyph: "▢", name: "Native mobile apps", desc: "Voice Beyond Time on iOS and Android, so a memory can be captured the moment it arrives." },
+              { glyph: "▢", name: "Native mobile apps", desc: "Amber on iOS and Android, so a memory can be captured the moment it arrives." },
               { glyph: "⚖", name: "Estate-planning integrations", desc: "Connect your digital legacy to wills and succession documents for a complete plan." },
             ].map((f) => (
               <div
@@ -178,7 +179,7 @@ export default function Landing() {
 
       <footer className="border-t border-ink/10">
         <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-3 px-6 py-8 text-sm text-sage sm:flex-row">
-          <Logo />
+          <Logo tagline />
           <span>A place for what matters most.</span>
         </div>
       </footer>

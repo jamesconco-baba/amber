@@ -3,7 +3,7 @@ import "./globals.css";
 import { StoreProvider } from "@/lib/store";
 
 export const metadata: Metadata = {
-  title: "Voice Beyond Time — A legacy that lives on",
+  title: "Amber — Voice beyond time",
   description:
     "Preserve your voice, memories, and wisdom, and release them to the people you love, exactly when it matters most.",
 };

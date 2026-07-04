@@ -1,4 +1,4 @@
--- Voice Beyond Time — Supabase schema
+-- Amber — Supabase schema
 -- Run this once in your Supabase project: SQL Editor → New query → paste → Run.
 -- Safe to re-run (uses IF NOT EXISTS / OR REPLACE where practical).
 

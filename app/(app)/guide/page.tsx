@@ -100,7 +100,7 @@ export default function Guide() {
     <div>
       <PageHeader
         eyebrow="How to Use"
-        title="Getting the most from Voice Beyond Time"
+        title="Getting the most from Amber"
         subtitle="A quick tour of each part. There’s no right order — start by preserving one memory, and build from there."
       />
 

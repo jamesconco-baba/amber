@@ -1,4 +1,4 @@
--- Voice Beyond Time — Family Tree migration
+-- Amber — Family Tree migration
 -- Run in Supabase SQL Editor after schema.sql.
 
 create table if not exists public.family_members (

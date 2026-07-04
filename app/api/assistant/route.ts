@@ -89,7 +89,7 @@ Return ONLY a JSON object, no prose outside it:
   }
 
   // ---- 2) Guardian review -----------------------------------------------------
-  const guardianSystem = `You are the VBT Legacy Guardian, a safety and ethics reviewer. You review a draft answer that an AI produced from ${creatorName}'s preserved content, before it reaches a family member (a ${audience}).
+  const guardianSystem = `You are the Amber Legacy Guardian, a safety and ethics reviewer. You review a draft answer that an AI produced from ${creatorName}'s preserved content, before it reaches a family member (a ${audience}).
 
 Check the DRAFT against these rules:
 1. Grounding: every claim about ${creatorName} must be supported by the SOURCES. Flag invented opinions/memories.

@@ -89,7 +89,7 @@ export default function Books() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = "voice-beyond-time-memoir.md";
+    a.download = "amber-memoir.md";
     a.click();
     URL.revokeObjectURL(url);
   };

@@ -1,4 +1,4 @@
--- Voice Beyond Time — AI layer migration
+-- Amber — AI layer migration
 -- Run in Supabase SQL Editor after schema.sql. Adds per-item AI consent.
 
 alter table public.content_items

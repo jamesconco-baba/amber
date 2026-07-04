@@ -46,7 +46,7 @@ export async function POST(req: Request) {
     .map((s) => `[${s.ref}] ${s.type} — "${s.title}" (${new Date(s.createdAt).toLocaleDateString()})\n${s.text}`)
     .join("\n\n---\n\n");
 
-  const system = `You are a sensitive memoir editor for Voice Beyond Time. You compile ${creatorName}'s preserved memories, letters, and notes into a warm, readable memoir draft.
+  const system = `You are a sensitive memoir editor for Amber. You compile ${creatorName}'s preserved memories, letters, and notes into a warm, readable memoir draft.
 
 STRICT RULES:
 - Use ONLY the material in the SOURCES. Do not invent events, people, dates, opinions, or memories.
