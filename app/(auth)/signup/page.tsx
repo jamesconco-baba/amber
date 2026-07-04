@@ -14,6 +14,10 @@ export default function SignUp() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [checkEmail, setCheckEmail] = useState(false);
+  const [resent, setResent] = useState(false);
+
+  const emailRedirect = () =>
+    typeof window !== "undefined" ? `${window.location.origin}/auth/callback?next=/onboarding` : undefined;
 
   const submit = async () => {
     const supabase = getSupabase();
@@ -23,7 +27,11 @@ export default function SignUp() {
     }
     setBusy(true);
     setError("");
-    const { data, error } = await supabase.auth.signUp({ email: email.trim(), password });
+    const { data, error } = await supabase.auth.signUp({
+      email: email.trim(),
+      password,
+      options: { emailRedirectTo: emailRedirect() },
+    });
     setBusy(false);
     if (error) {
       setError(error.message);
@@ -32,6 +40,22 @@ export default function SignUp() {
     // If the project requires email confirmation, there's no session yet.
     if (data.session) router.push("/onboarding");
     else setCheckEmail(true);
+  };
+
+  const resend = async () => {
+    const supabase = getSupabase();
+    if (!supabase) return;
+    setError("");
+    const { error } = await supabase.auth.resend({
+      type: "signup",
+      email: email.trim(),
+      options: { emailRedirectTo: emailRedirect() },
+    });
+    if (error) setError(error.message);
+    else {
+      setResent(true);
+      setTimeout(() => setResent(false), 4000);
+    }
   };
 
   return (
@@ -57,6 +81,19 @@ export default function SignUp() {
         )
       }
     >
+      {checkEmail && (
+        <div className="space-y-4">
+          <div className="rounded-xl2 border border-ink/10 bg-parchment/60 p-4 text-[15px] leading-relaxed text-ink/75">
+            Open the link in that email to confirm your account. It may take a minute to
+            arrive — and do check your spam folder.
+          </div>
+          {error && <p className="text-sm text-clay">{error}</p>}
+          <Button variant="outline" onClick={resend} className="w-full">
+            {resent ? "Sent again — check your inbox" : "Resend confirmation email"}
+          </Button>
+        </div>
+      )}
+
       {!checkEmail && (
         <div className="space-y-4">
           <Field label="Email">

@@ -57,11 +57,44 @@ Run [`supabase/migration_family.sql`](./supabase/migration_family.sql) in the SQ
 "By theme" grouping in Memories then work end to end. Memories&apos; "By person" and "By
 time" views need no migration and work immediately.
 
-### 4. (Optional) Turn off email confirmation for faster testing
-Supabase → **Authentication → Providers → Email** → toggle **Confirm email** off. With it
-off, sign-up logs you straight in. With it on, sign-up sends a confirmation link and the
-app shows a "check your email" screen (this uses Supabase's built-in email, which is
-rate-limited; wire your own SMTP for volume).
+### 4. Email verification (recommended for production)
+
+The app has the routes to handle confirmation links (`/auth/confirm` for the token-hash
+flow, `/auth/callback` for the code flow). You need to configure Supabase so the emails
+actually send and the links point at those routes.
+
+**a. Use a real email provider (fixes the "email rate limit exceeded" error).**
+Supabase's built-in email is dev-only and caps at a few messages per hour. Set up custom
+SMTP — Resend works well:
+- Supabase → **Project Settings → Authentication → SMTP Settings** → enable custom SMTP.
+- Host `smtp.resend.com`, port `465`, username `resend`, password = your Resend API key,
+  sender = a verified address on your domain (e.g. `hello@theamberapp.com`).
+- In Resend, verify `theamberapp.com` and add the **SPF** and **DKIM** DNS records it gives
+  you, or confirmation emails will land in spam.
+- Then raise the cap: Supabase → **Authentication → Rate Limits** → increase the
+  email-sending limit (it defaults to a low number).
+
+**b. Point the confirmation link at the app.**
+Supabase → **Authentication → URL Configuration**:
+- **Site URL**: `https://theamberapp.com`
+- **Redirect URLs**: add `https://theamberapp.com/auth/callback`,
+  `https://theamberapp.com/auth/confirm`, and (for local dev) the same two on
+  `http://localhost:3000`.
+
+**c. Update the confirmation email template.**
+Supabase → **Authentication → Email Templates → Confirm signup** → change the link so it
+uses the token hash and lands on the confirm route:
+
+```
+<a href="{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=email&next=/onboarding">Confirm your email</a>
+```
+
+Keep email confirmation **on** (Authentication → Providers → Email → Confirm email). New
+users then get a link, click it, and land in onboarding with an active session. The
+sign-up screen also offers a "Resend confirmation email" button.
+
+*For quick local testing only,* you can toggle Confirm email off to skip the email step —
+just remember to turn it back on for production.
 
 ## Run locally
 
@@ -100,6 +133,9 @@ Voice recording needs HTTPS; Vercel provides it (and `localhost` counts as secur
   user's rows, generates 1-hour signed URLs for media, and performs all create/update/
   delete against Supabase. Media is uploaded to `vault/<user_id>/<uuid>.<ext>`.
 - Auth pages: `/signup`, `/signin`. New users land in `/onboarding`, then `/dashboard`.
+- Email confirmation links are handled by two Route Handlers: `/auth/confirm` verifies the
+  token hash (`verifyOtp`) and `/auth/callback` exchanges a code (`exchangeCodeForSession`).
+  Both set the session cookie and redirect to `/onboarding`.
 
 ## Project structure
 
