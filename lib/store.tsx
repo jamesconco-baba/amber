@@ -41,6 +41,23 @@ const EMPTY: VBTData = {
 
 const SIGNED_URL_TTL = 60 * 60; // 1 hour
 
+// Sign a set of private-bucket paths, resilient to empty/failed entries.
+// Keys the result by the path the API echoes back, falling back to position.
+async function signPaths(
+  supabase: SupabaseClient,
+  paths: (string | null | undefined)[]
+): Promise<Record<string, string>> {
+  const clean = Array.from(new Set(paths.filter((p): p is string => !!p)));
+  const out: Record<string, string> = {};
+  if (!clean.length) return out;
+  const { data: sigs } = await supabase.storage.from("vault").createSignedUrls(clean, SIGNED_URL_TTL);
+  sigs?.forEach((s, i) => {
+    const key = s.path ?? clean[i];
+    if (key && s.signedUrl) out[key] = s.signedUrl;
+  });
+  return out;
+}
+
 function mimeToExt(mime: string) {
   if (mime.includes("webm")) return "webm";
   if (mime.includes("mp4") || mime.includes("mpeg")) return "mp4";
@@ -164,19 +181,17 @@ async function loadAll(
     return [];
   };
 
-  // Collect every private-bucket path (all attachments + avatars) and sign once.
-  const paths = [
-    ...contentRows.flatMap((c) => mediaOf(c).map((m) => m.path)),
-    ...benRows.filter((b) => b.avatar_path).map((b) => b.avatar_path as string),
-    ...(profileRow?.avatar_path ? [profileRow.avatar_path as string] : []),
-  ];
-  const signed: Record<string, string> = {};
-  if (paths.length) {
-    const { data: sigs } = await supabase.storage.from("vault").createSignedUrls(paths, SIGNED_URL_TTL);
-    sigs?.forEach((s, i) => {
-      if (s.signedUrl) signed[paths[i]] = s.signedUrl;
-    });
-  }
+  // Sign attachments and avatars in separate calls so a problem with one set
+  // can never prevent the other from resolving.
+  const mediaSigned = await signPaths(
+    supabase,
+    contentRows.flatMap((c) => mediaOf(c).map((m) => m.path))
+  );
+  const avatarSigned = await signPaths(supabase, [
+    ...benRows.map((b) => b.avatar_path),
+    profileRow?.avatar_path,
+  ]);
+  const signed: Record<string, string> = { ...mediaSigned, ...avatarSigned };
 
   const profile: Profile | null = profileRow
     ? {
