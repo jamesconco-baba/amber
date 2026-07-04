@@ -57,6 +57,19 @@ Run [`supabase/migration_family.sql`](./supabase/migration_family.sql) in the SQ
 "By theme" grouping in Memories then work end to end. Memories&apos; "By person" and "By
 time" views need no migration and work immediately.
 
+### 3d. Enable photos, member details & consent
+Run [`supabase/migration_profiles_v2.sql`](./supabase/migration_profiles_v2.sql) in the SQL
+Editor. It adds profile/beneficiary photo paths, member notes, and a consent timestamp.
+Avatars are stored in the same private `vault` bucket and served via signed URLs, so no new
+bucket is needed.
+
+### 3e. Enable multiple files per memory
+Run [`supabase/migration_media_multi.sql`](./supabase/migration_media_multi.sql) in the SQL
+Editor. It adds a `media` jsonb array to each memory and backfills existing single-file
+memories into it, so nothing you've already saved is lost. A memory can now hold a voice
+note plus any number of photos, videos, and documents, and you can add or remove files when
+editing a memory.
+
 ### 4. Email verification (recommended for production)
 
 The app has the routes to handle confirmation links (`/auth/confirm` for the token-hash

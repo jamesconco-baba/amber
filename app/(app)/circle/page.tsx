@@ -2,41 +2,47 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useStore } from "@/lib/store";
-import {
-  PageHeader,
-  Button,
-  Card,
-  Field,
-  Modal,
-  EmptyState,
-  inputClass,
-} from "@/components/ui";
+import { PageHeader, Button, Card, Field, Modal, EmptyState, inputClass } from "@/components/ui";
+import { Avatar, AvatarPicker } from "@/components/avatar";
 import { formatDate } from "@/lib/media";
 
 const RELATIONSHIPS = ["Daughter", "Son", "Grandchild", "Spouse", "Sibling", "Other"];
 
 export default function Circle() {
-  const { data, addBeneficiary, removeBeneficiary } = useStore();
+  const { data, addBeneficiary } = useStore();
+  const router = useRouter();
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
   const [relationship, setRelationship] = useState(RELATIONSHIPS[0]);
   const [email, setEmail] = useState("");
   const [birthday, setBirthday] = useState("");
+  const [avatar, setAvatar] = useState<string | undefined>();
+  const [saving, setSaving] = useState(false);
 
-  const save = () => {
+  const save = async () => {
     if (!name.trim()) return;
-    addBeneficiary({
-      name: name.trim(),
-      relationship,
-      email: email.trim() || undefined,
-      birthday: birthday || undefined,
-    });
-    setName("");
-    setEmail("");
-    setBirthday("");
-    setRelationship(RELATIONSHIPS[0]);
-    setOpen(false);
+    setSaving(true);
+    try {
+      await addBeneficiary(
+        {
+          name: name.trim(),
+          relationship,
+          email: email.trim() || undefined,
+          birthday: birthday || undefined,
+        },
+        avatar
+      );
+      setName("");
+      setEmail("");
+      setBirthday("");
+      setAvatar(undefined);
+      setRelationship(RELATIONSHIPS[0]);
+      setOpen(false);
+    } finally {
+      setSaving(false);
+    }
   };
 
   const forCount = (id: string) =>
@@ -48,7 +54,7 @@ export default function Circle() {
       <PageHeader
         eyebrow="Legacy Circle"
         title="The people you're preserving for"
-        subtitle="Your circle defines who can receive what you leave, and when. You stay in control of every rule."
+        subtitle="Your circle defines who can receive what you leave, and when. Tap anyone to add details."
         action={
           <div className="flex gap-2">
             <Link href="/inheritance">
@@ -68,36 +74,39 @@ export default function Circle() {
       ) : (
         <div className="grid gap-4 sm:grid-cols-2">
           {data.beneficiaries.map((b) => (
-            <Card key={b.id} className="p-5">
-              <div className="flex items-start justify-between">
+            <button
+              key={b.id}
+              onClick={() => router.push(`/circle/${b.id}`)}
+              className="text-left"
+            >
+              <Card className="p-5 transition-shadow hover:shadow-lift">
                 <div className="flex items-center gap-3">
-                  <span className="grid h-11 w-11 place-items-center rounded-full bg-ink font-display text-lg text-amber-soft">
-                    {b.name.charAt(0).toUpperCase()}
-                  </span>
-                  <div>
-                    <h3 className="font-display text-lg text-ink">{b.name}</h3>
+                  <Avatar url={b.avatarUrl} name={b.name} size={44} />
+                  <div className="min-w-0 flex-1">
+                    <h3 className="truncate font-display text-lg text-ink">{b.name}</h3>
                     <p className="text-sm text-sage">{b.relationship}</p>
                   </div>
+                  <span className="text-sm text-clay">Edit →</span>
                 </div>
-                <button
-                  className="text-sm text-clay hover:underline"
-                  onClick={() => removeBeneficiary(b.id)}
-                >
-                  Remove
-                </button>
-              </div>
-              <dl className="mt-4 space-y-1 text-sm text-sage">
-                {b.email && <div>Email · {b.email}</div>}
-                {b.birthday && <div>Birthday · {formatDate(b.birthday)}</div>}
-                <div>{forCount(b.id)} item(s) addressed to them</div>
-              </dl>
-            </Card>
+                <dl className="mt-4 space-y-1 text-sm text-sage">
+                  {b.email && <div className="truncate">Email · {b.email}</div>}
+                  {b.birthday && <div>Birthday · {formatDate(b.birthday)}</div>}
+                  <div>{forCount(b.id)} item(s) addressed to them</div>
+                </dl>
+              </Card>
+            </button>
           ))}
         </div>
       )}
 
       <Modal open={open} onClose={() => setOpen(false)} title="Add to your circle">
         <div className="space-y-5">
+          <AvatarPicker
+            name={name}
+            preview={avatar}
+            onPick={setAvatar}
+            onClear={() => setAvatar(undefined)}
+          />
           <Field label="Name">
             <input
               className={inputClass}
@@ -123,7 +132,7 @@ export default function Circle() {
               placeholder="them@example.com"
             />
           </Field>
-          <Field label="Birthday (optional)" hint="Helps suggest milestone dates later.">
+          <Field label="Date of birth (optional)" hint="Helps suggest milestone dates later.">
             <input
               className={inputClass}
               type="date"
@@ -135,8 +144,8 @@ export default function Circle() {
             <Button variant="ghost" onClick={() => setOpen(false)}>
               Cancel
             </Button>
-            <Button onClick={save} disabled={!name.trim()}>
-              Add to circle
+            <Button onClick={save} disabled={!name.trim() || saving}>
+              {saving ? "Adding…" : "Add to circle"}
             </Button>
           </div>
         </div>

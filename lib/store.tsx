@@ -16,9 +16,11 @@ import {
   Profile,
   Beneficiary,
   ContentItem,
+  MediaItem,
   ScheduledMessage,
   FamilyMember,
 } from "./types";
+import { typeFromMime } from "./media";
 
 // ---------------------------------------------------------------------------
 // Supabase-backed store.
@@ -54,6 +56,55 @@ async function dataUrlToBlob(dataUrl: string): Promise<Blob> {
   return res.blob();
 }
 
+// Upload an avatar image (data URL) to the private bucket, return its path.
+async function uploadAvatar(
+  supabase: SupabaseClient,
+  userId: string,
+  dataUrl: string
+): Promise<string> {
+  const blob = await dataUrlToBlob(dataUrl);
+  const ext = mimeToExt(blob.type || "image/jpeg");
+  const path = `${userId}/avatars/${crypto.randomUUID()}.${ext}`;
+  const { error } = await supabase.storage
+    .from("vault")
+    .upload(path, blob, { contentType: blob.type || "image/jpeg", upsert: false });
+  if (error) throw error;
+  return path;
+}
+
+interface MediaRow {
+  path: string;
+  mime: string;
+  filename?: string;
+  duration?: number;
+  kind: string;
+}
+
+// Turn a memory's attachment list into stored rows: newly-added items (data: URLs)
+// are uploaded; already-saved items (with a path) are kept as-is.
+async function buildMediaRows(
+  supabase: SupabaseClient,
+  userId: string,
+  media: MediaItem[]
+): Promise<MediaRow[]> {
+  const rows: MediaRow[] = [];
+  for (const m of media) {
+    if (m.dataUrl?.startsWith("data:")) {
+      const blob = await dataUrlToBlob(m.dataUrl);
+      const ext = mimeToExt(m.mimeType);
+      const path = `${userId}/${crypto.randomUUID()}.${ext}`;
+      const { error } = await supabase.storage
+        .from("vault")
+        .upload(path, blob, { contentType: m.mimeType, upsert: false });
+      if (error) throw error;
+      rows.push({ path, mime: m.mimeType, filename: m.fileName, duration: m.durationSec, kind: m.kind });
+    } else if (m.path) {
+      rows.push({ path: m.path, mime: m.mimeType, filename: m.fileName, duration: m.durationSec, kind: m.kind });
+    }
+  }
+  return rows;
+}
+
 // Map DB rows -> app types, attaching signed URLs for any media.
 async function loadAll(
   supabase: SupabaseClient,
@@ -77,7 +128,48 @@ async function loadAll(
   ]);
 
   const contentRows = contentRes.data ?? [];
-  const paths = contentRows.filter((c) => c.media_path).map((c) => c.media_path as string);
+  const benRows = benRes.data ?? [];
+  const profileRow = profileRes.data;
+
+  // A content row's attachments come from the `media` jsonb array; older rows
+  // may only have the legacy single-media columns, which we fold into one item.
+  const mediaOf = (c: {
+    media?: { path: string; mime?: string; filename?: string; duration?: number; kind?: string }[] | null;
+    media_path?: string | null;
+    media_mime?: string | null;
+    media_filename?: string | null;
+    media_duration?: number | null;
+  }): { path: string; mime: string; filename?: string; duration?: number; kind: string }[] => {
+    const arr = Array.isArray(c.media) ? c.media : [];
+    if (arr.length) {
+      return arr.map((m) => ({
+        path: m.path,
+        mime: m.mime ?? "application/octet-stream",
+        filename: m.filename ?? undefined,
+        duration: m.duration ?? undefined,
+        kind: m.kind ?? typeFromMime(m.mime ?? ""),
+      }));
+    }
+    if (c.media_path) {
+      return [
+        {
+          path: c.media_path,
+          mime: c.media_mime ?? "application/octet-stream",
+          filename: c.media_filename ?? undefined,
+          duration: c.media_duration ?? undefined,
+          kind: typeFromMime(c.media_mime ?? ""),
+        },
+      ];
+    }
+    return [];
+  };
+
+  // Collect every private-bucket path (all attachments + avatars) and sign once.
+  const paths = [
+    ...contentRows.flatMap((c) => mediaOf(c).map((m) => m.path)),
+    ...benRows.filter((b) => b.avatar_path).map((b) => b.avatar_path as string),
+    ...(profileRow?.avatar_path ? [profileRow.avatar_path as string] : []),
+  ];
   const signed: Record<string, string> = {};
   if (paths.length) {
     const { data: sigs } = await supabase.storage.from("vault").createSignedUrls(paths, SIGNED_URL_TTL);
@@ -86,25 +178,29 @@ async function loadAll(
     });
   }
 
-  const profile: Profile | null = profileRes.data
+  const profile: Profile | null = profileRow
     ? {
         id: userId,
-        name: profileRes.data.name ?? "You",
+        name: profileRow.name ?? "You",
         email,
         role: "creator",
-        createdAt: profileRes.data.created_at,
+        avatarUrl: profileRow.avatar_path ? signed[profileRow.avatar_path] : undefined,
+        consentAt: profileRow.consent_at ?? undefined,
+        createdAt: profileRow.created_at,
       }
     : null;
 
   return {
     profile,
-    onboarded: Boolean(profileRes.data?.onboarded),
-    beneficiaries: (benRes.data ?? []).map((b) => ({
+    onboarded: Boolean(profileRow?.onboarded),
+    beneficiaries: benRows.map((b) => ({
       id: b.id,
       name: b.name,
       relationship: b.relationship ?? "",
       email: b.email ?? undefined,
       birthday: b.birthday ?? undefined,
+      notes: b.notes ?? undefined,
+      avatarUrl: b.avatar_path ? signed[b.avatar_path] : undefined,
       createdAt: b.created_at,
     })),
     content: contentRows.map((c) => ({
@@ -118,14 +214,14 @@ async function loadAll(
       promptId: c.prompt_id ?? undefined,
       aiConsent: c.ai_consent ?? true,
       createdAt: c.created_at,
-      media: c.media_path
-        ? {
-            dataUrl: signed[c.media_path] ?? "",
-            mimeType: c.media_mime ?? "application/octet-stream",
-            fileName: c.media_filename ?? undefined,
-            durationSec: c.media_duration ?? undefined,
-          }
-        : undefined,
+      media: mediaOf(c).map((m) => ({
+        dataUrl: signed[m.path] ?? "",
+        mimeType: m.mime,
+        kind: m.kind as ContentItem["type"],
+        fileName: m.filename,
+        durationSec: m.duration,
+        path: m.path,
+      })),
     })),
     messages: (msgRes.data ?? []).map((m) => ({
       id: m.id,
@@ -161,11 +257,26 @@ interface StoreShape {
   configured: boolean;
   session: Session | null;
   refresh: () => Promise<void>;
-  saveProfile: (name: string) => Promise<void>;
+  saveProfile: (name: string, avatarDataUrl?: string) => Promise<void>;
+  recordConsent: () => Promise<void>;
   finishOnboarding: () => Promise<void>;
-  addBeneficiary: (b: Omit<Beneficiary, "id" | "createdAt">) => Promise<void>;
+  addBeneficiary: (
+    b: Omit<Beneficiary, "id" | "createdAt" | "avatarUrl">,
+    avatarDataUrl?: string
+  ) => Promise<void>;
+  updateBeneficiary: (
+    id: string,
+    patch: Partial<Omit<Beneficiary, "id" | "createdAt" | "avatarUrl">>,
+    avatarDataUrl?: string
+  ) => Promise<void>;
   removeBeneficiary: (id: string) => Promise<void>;
   addContent: (c: Omit<ContentItem, "id" | "createdAt">) => Promise<void>;
+  updateContent: (
+    id: string,
+    patch: Partial<
+      Pick<ContentItem, "title" | "note" | "tags" | "beneficiaryIds" | "aiConsent" | "media" | "type">
+    >
+  ) => Promise<void>;
   removeContent: (id: string) => Promise<void>;
   addMessage: (m: Omit<ScheduledMessage, "id" | "createdAt">) => Promise<void>;
   updateMessage: (id: string, patch: Partial<ScheduledMessage>) => Promise<void>;
@@ -240,9 +351,18 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       configured,
       session,
       refresh,
-      saveProfile: async (name) => {
+      saveProfile: async (name, avatarDataUrl) => {
         const { supabase, userId } = requireAuth();
-        await supabase.from("profiles").upsert({ id: userId, name });
+        const row: Record<string, unknown> = { id: userId, name };
+        if (avatarDataUrl?.startsWith("data:")) {
+          row.avatar_path = await uploadAvatar(supabase, userId, avatarDataUrl);
+        }
+        await supabase.from("profiles").upsert(row);
+        await refresh();
+      },
+      recordConsent: async () => {
+        const { supabase, userId } = requireAuth();
+        await supabase.from("profiles").upsert({ id: userId, consent_at: new Date().toISOString() });
         await refresh();
       },
       finishOnboarding: async () => {
@@ -250,15 +370,35 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         await supabase.from("profiles").upsert({ id: userId, onboarded: true });
         await refresh();
       },
-      addBeneficiary: async (b) => {
+      addBeneficiary: async (b, avatarDataUrl) => {
         const { supabase, userId } = requireAuth();
+        let avatar_path: string | null = null;
+        if (avatarDataUrl?.startsWith("data:")) {
+          avatar_path = await uploadAvatar(supabase, userId, avatarDataUrl);
+        }
         await supabase.from("beneficiaries").insert({
           user_id: userId,
           name: b.name,
           relationship: b.relationship,
           email: b.email ?? null,
           birthday: b.birthday ?? null,
+          notes: b.notes ?? null,
+          avatar_path,
         });
+        await refresh();
+      },
+      updateBeneficiary: async (id, patch, avatarDataUrl) => {
+        const { supabase, userId } = requireAuth();
+        const row: Record<string, unknown> = {};
+        if (patch.name !== undefined) row.name = patch.name;
+        if (patch.relationship !== undefined) row.relationship = patch.relationship;
+        if (patch.email !== undefined) row.email = patch.email ?? null;
+        if (patch.birthday !== undefined) row.birthday = patch.birthday ?? null;
+        if (patch.notes !== undefined) row.notes = patch.notes ?? null;
+        if (avatarDataUrl?.startsWith("data:")) {
+          row.avatar_path = await uploadAvatar(supabase, userId, avatarDataUrl);
+        }
+        await supabase.from("beneficiaries").update(row).eq("id", id);
         await refresh();
       },
       removeBeneficiary: async (id) => {
@@ -268,17 +408,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       },
       addContent: async (c) => {
         const { supabase, userId } = requireAuth();
-        let media_path: string | null = null;
-        if (c.media?.dataUrl?.startsWith("data:")) {
-          const blob = await dataUrlToBlob(c.media.dataUrl);
-          const ext = mimeToExt(c.media.mimeType);
-          const path = `${userId}/${crypto.randomUUID()}.${ext}`;
-          const { error } = await supabase.storage
-            .from("vault")
-            .upload(path, blob, { contentType: c.media.mimeType, upsert: false });
-          if (error) throw error;
-          media_path = path;
-        }
+        const mediaRows = await buildMediaRows(supabase, userId, c.media ?? []);
         const { error } = await supabase.from("content_items").insert({
           user_id: userId,
           type: c.type,
@@ -289,12 +419,24 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           beneficiary_ids: c.beneficiaryIds,
           prompt_id: c.promptId ?? null,
           ai_consent: c.aiConsent ?? true,
-          media_path,
-          media_mime: c.media?.mimeType ?? null,
-          media_filename: c.media?.fileName ?? null,
-          media_duration: c.media?.durationSec ?? null,
+          media: mediaRows,
         });
         if (error) throw error;
+        await refresh();
+      },
+      updateContent: async (id, patch) => {
+        const { supabase, userId } = requireAuth();
+        const row: Record<string, unknown> = {};
+        if (patch.title !== undefined) row.title = patch.title;
+        if (patch.note !== undefined) row.note = patch.note ?? null;
+        if (patch.tags !== undefined) row.tags = patch.tags;
+        if (patch.beneficiaryIds !== undefined) row.beneficiary_ids = patch.beneficiaryIds;
+        if (patch.aiConsent !== undefined) row.ai_consent = patch.aiConsent;
+        if (patch.type !== undefined) row.type = patch.type;
+        if (patch.media !== undefined) {
+          row.media = await buildMediaRows(supabase, userId, patch.media);
+        }
+        await supabase.from("content_items").update(row).eq("id", id);
         await refresh();
       },
       removeContent: async (id) => {

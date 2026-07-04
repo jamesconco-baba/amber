@@ -6,24 +6,46 @@ import { useStore } from "@/lib/store";
 import { PROMPTS } from "@/lib/prompts";
 import { Logo, Waveform } from "@/components/brand";
 import { Button, Field, inputClass } from "@/components/ui";
+import { Avatar, AvatarPicker } from "@/components/avatar";
 import { Recorder, RecordedAudio } from "@/components/recorder";
 
 const RELATIONSHIPS = ["Daughter", "Son", "Grandchild", "Spouse", "Sibling", "Other"];
 
+interface CircleEntry {
+  id: string;
+  name: string;
+  relationship: string;
+  email?: string;
+  birthday?: string;
+  avatar?: string;
+}
+
 export default function Onboarding() {
-  const { ready, session, data, saveProfile, addBeneficiary, addContent, finishOnboarding } =
-    useStore();
+  const {
+    ready,
+    session,
+    data,
+    saveProfile,
+    addBeneficiary,
+    addContent,
+    finishOnboarding,
+    recordConsent,
+  } = useStore();
   const router = useRouter();
   const [step, setStep] = useState(0);
   const [saving, setSaving] = useState(false);
 
-  // step 0 — your name (account already exists via sign-up)
+  // step 0 — your name + photo (account already exists via sign-up)
   const [name, setName] = useState("");
+  const [avatar, setAvatar] = useState<string | undefined>();
 
   // step 1 — circle
   const [bName, setBName] = useState("");
   const [bRel, setBRel] = useState(RELATIONSHIPS[0]);
-  const [circle, setCircle] = useState<{ id: string; name: string; relationship: string }[]>([]);
+  const [bEmail, setBEmail] = useState("");
+  const [bBirthday, setBBirthday] = useState("");
+  const [bAvatar, setBAvatar] = useState<string | undefined>();
+  const [circle, setCircle] = useState<CircleEntry[]>([]);
 
   // step 2 — first message
   const [prompt] = useState(() => PROMPTS[Math.floor(Math.random() * PROMPTS.length)]);
@@ -41,17 +63,32 @@ export default function Onboarding() {
     if (!bName.trim()) return;
     setCircle((c) => [
       ...c,
-      { id: crypto.randomUUID(), name: bName.trim(), relationship: bRel },
+      {
+        id: crypto.randomUUID(),
+        name: bName.trim(),
+        relationship: bRel,
+        email: bEmail.trim() || undefined,
+        birthday: bBirthday || undefined,
+        avatar: bAvatar,
+      },
     ]);
     setBName("");
+    setBEmail("");
+    setBBirthday("");
+    setBAvatar(undefined);
+    setBRel(RELATIONSHIPS[0]);
   };
 
   const finish = async () => {
     setSaving(true);
     try {
-      await saveProfile(name.trim() || "You");
+      await saveProfile(name.trim() || "You", avatar);
+      await recordConsent();
       for (const b of circle) {
-        await addBeneficiary({ name: b.name, relationship: b.relationship });
+        await addBeneficiary(
+          { name: b.name, relationship: b.relationship, email: b.email, birthday: b.birthday },
+          b.avatar
+        );
       }
       if (audio || written.trim()) {
         await addContent({
@@ -62,8 +99,15 @@ export default function Onboarding() {
           beneficiaryIds: [],
           promptId: prompt.id,
           media: audio
-            ? { dataUrl: audio.dataUrl, mimeType: audio.mimeType, durationSec: audio.durationSec }
-            : undefined,
+            ? [
+                {
+                  dataUrl: audio.dataUrl,
+                  mimeType: audio.mimeType,
+                  kind: "voice",
+                  durationSec: audio.durationSec,
+                },
+              ]
+            : [],
         });
       }
       await finishOnboarding();
@@ -106,6 +150,12 @@ export default function Onboarding() {
               voice behind everything you preserve.
             </p>
             <div className="mt-8 space-y-5">
+              <AvatarPicker
+                name={name}
+                preview={avatar}
+                onPick={setAvatar}
+                onClear={() => setAvatar(undefined)}
+              />
               <Field label="Your name">
                 <input
                   className={inputClass}
@@ -133,33 +183,57 @@ export default function Onboarding() {
             </p>
 
             <div className="mt-8 rounded-xl2 border border-ink/10 bg-parchment-card p-5">
-              <div className="grid gap-3 sm:grid-cols-[1fr_auto_auto]">
+              <AvatarPicker
+                name={bName}
+                preview={bAvatar}
+                size={64}
+                onPick={setBAvatar}
+                onClear={() => setBAvatar(undefined)}
+              />
+              <div className="mt-4 grid gap-3 sm:grid-cols-2">
                 <input
                   className={inputClass}
                   value={bName}
                   onChange={(e) => setBName(e.target.value)}
                   placeholder="Their name"
-                  onKeyDown={(e) => e.key === "Enter" && addToCircle()}
                 />
                 <select className={inputClass} value={bRel} onChange={(e) => setBRel(e.target.value)}>
                   {RELATIONSHIPS.map((r) => (
                     <option key={r}>{r}</option>
                   ))}
                 </select>
-                <Button variant="outline" onClick={addToCircle}>
-                  Add
+                <input
+                  className={inputClass}
+                  type="email"
+                  value={bEmail}
+                  onChange={(e) => setBEmail(e.target.value)}
+                  placeholder="Email (optional)"
+                />
+                <input
+                  className={inputClass}
+                  type="date"
+                  value={bBirthday}
+                  onChange={(e) => setBBirthday(e.target.value)}
+                  aria-label="Date of birth"
+                />
+              </div>
+              <div className="mt-3 flex justify-end">
+                <Button variant="outline" onClick={addToCircle} disabled={!bName.trim()}>
+                  Add to circle
                 </Button>
               </div>
 
               {circle.length > 0 && (
-                <ul className="mt-4 space-y-2">
+                <ul className="mt-4 space-y-2 border-t border-ink/10 pt-4">
                   {circle.map((b) => (
                     <li
                       key={b.id}
-                      className="flex items-center justify-between rounded-xl bg-parchment/70 px-4 py-2.5"
+                      className="flex items-center gap-3 rounded-xl bg-parchment/70 px-3 py-2.5"
                     >
-                      <span className="text-ink">
+                      <Avatar url={b.avatar} name={b.name} size={34} />
+                      <span className="flex-1 text-ink">
                         {b.name} <span className="text-sage">· {b.relationship}</span>
+                        {b.email && <span className="block text-xs text-sage">{b.email}</span>}
                       </span>
                       <button
                         className="text-sm text-clay hover:underline"

@@ -39,6 +39,18 @@ export function typeFromMime(mime: string): ContentType {
   return "document";
 }
 
+// Choose the primary/category type for a memory from its attachments + note.
+export function primaryType(
+  kinds: ContentType[],
+  hasNote: boolean
+): ContentType {
+  if (kinds.includes("voice")) return "voice";
+  if (kinds.includes("video")) return "video";
+  if (kinds.includes("photo")) return "photo";
+  if (kinds.includes("document")) return "document";
+  return hasNote ? "letter" : "letter";
+}
+
 export const TYPE_LABEL: Record<ContentType, string> = {
   voice: "Voice note",
   video: "Video",

@@ -5,18 +5,21 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useStore } from "@/lib/store";
 import { PageHeader, Card, Button, Field, Modal, inputClass } from "@/components/ui";
+import { AvatarPicker } from "@/components/avatar";
 
 export default function Settings() {
   const { data, saveProfile, reset, signOut } = useStore();
   const router = useRouter();
   const [name, setName] = useState(data.profile?.name ?? "");
   const [email] = useState(data.profile?.email ?? "");
+  const [avatar, setAvatar] = useState<string | undefined>();
   const [saved, setSaved] = useState(false);
   const [confirm, setConfirm] = useState(false);
 
   const saveProfileChanges = async () => {
     if (!data.profile) return;
-    await saveProfile(name.trim() || data.profile.name);
+    await saveProfile(name.trim() || data.profile.name, avatar);
+    setAvatar(undefined);
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
   };
@@ -39,6 +42,14 @@ export default function Settings() {
       <div className="space-y-6">
         <Card className="p-6">
           <h2 className="mb-4 font-display text-lg text-ink">Your profile</h2>
+          <div className="mb-5">
+            <AvatarPicker
+              url={data.profile?.avatarUrl}
+              preview={avatar}
+              name={name}
+              onPick={setAvatar}
+            />
+          </div>
           <div className="grid gap-5 sm:grid-cols-2">
             <Field label="Name">
               <input className={inputClass} value={name} onChange={(e) => setName(e.target.value)} />

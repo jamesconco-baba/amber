@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { useStore } from "@/lib/store";
 import { Logo } from "@/components/brand";
 import { Button } from "@/components/ui";
@@ -180,7 +181,15 @@ export default function Landing() {
       <footer className="border-t border-ink/10">
         <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-3 px-6 py-8 text-sm text-sage sm:flex-row">
           <Logo tagline />
-          <span>A place for what matters most.</span>
+          <div className="flex items-center gap-4">
+            <Link href="/legal/terms" className="hover:text-ink">
+              Terms
+            </Link>
+            <Link href="/legal/privacy" className="hover:text-ink">
+              Privacy
+            </Link>
+            <span>A place for what matters most.</span>
+          </div>
         </div>
       </footer>
     </main>

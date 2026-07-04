@@ -208,9 +208,11 @@ export default function Memories() {
                       </div>
                     </div>
                   </div>
-                  {c.type === "voice" && c.media && (
-                    <audio controls src={c.media.dataUrl} className="mt-2 w-full" />
-                  )}
+                  {c.media
+                    .filter((m) => m.kind === "voice")
+                    .map((m, i) => (
+                      <audio key={i} controls src={m.dataUrl} className="mt-2 w-full" />
+                    ))}
                   {c.note && <p className="mt-2 text-sm text-ink/75">{c.note}</p>}
                   {c.tags.length > 0 && (
                     <div className="mt-2 flex flex-wrap gap-1.5">

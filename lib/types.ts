@@ -15,6 +15,8 @@ export interface Profile {
   name: string;
   email: string;
   role: Role;
+  avatarUrl?: string; // signed URL for the profile photo
+  consentAt?: string; // when they accepted the terms & privacy policy
   createdAt: string;
 }
 
@@ -24,23 +26,29 @@ export interface Beneficiary {
   relationship: string; // e.g. "Daughter", "Son", "Grandchild"
   email?: string;
   birthday?: string; // ISO date, used to suggest milestone dates
+  notes?: string; // free notes / extra details about this person
+  avatarUrl?: string; // signed URL for their photo
   createdAt: string;
+}
+
+export interface MediaItem {
+  dataUrl: string; // signed URL (existing) or data: URL (newly added, pre-upload)
+  mimeType: string;
+  kind: ContentType; // voice | video | photo | document
+  fileName?: string;
+  durationSec?: number;
+  path?: string; // storage path for already-saved files (identifies keep vs remove on edit)
 }
 
 export interface ContentItem {
   id: string;
-  type: ContentType;
+  type: ContentType; // primary/category type, derived from the attachments + note
   title: string;
   note?: string; // written body for letters / caption for media
   transcript?: string;
   tags: string[];
   beneficiaryIds: string[]; // who this is for (empty = whole circle)
-  media?: {
-    dataUrl: string; // base64 data URL (prototype storage)
-    mimeType: string;
-    fileName?: string;
-    durationSec?: number;
-  };
+  media: MediaItem[]; // zero or more attachments of any type
   promptId?: string; // if created from a guided prompt
   aiConsent?: boolean; // include in the AI Legacy Assistant (default true)
   createdAt: string;

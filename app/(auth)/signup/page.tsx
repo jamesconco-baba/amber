@@ -15,6 +15,7 @@ export default function SignUp() {
   const [error, setError] = useState("");
   const [checkEmail, setCheckEmail] = useState(false);
   const [resent, setResent] = useState(false);
+  const [consent, setConsent] = useState(false);
 
   const emailRedirect = () =>
     typeof window !== "undefined" ? `${window.location.origin}/auth/callback?next=/onboarding` : undefined;
@@ -117,9 +118,29 @@ export default function SignUp() {
             />
           </Field>
           {error && <p className="text-sm text-clay">{error}</p>}
+          <label className="flex items-start gap-2.5 text-sm text-ink/75">
+            <input
+              type="checkbox"
+              checked={consent}
+              onChange={(e) => setConsent(e.target.checked)}
+              className="mt-0.5 h-4 w-4 accent-[#BE873B]"
+            />
+            <span>
+              I agree that Amber may collect and securely store my personal data to provide the
+              service, and I accept the{" "}
+              <Link href="/legal/terms" className="text-clay hover:underline" target="_blank">
+                Terms of Service
+              </Link>{" "}
+              and{" "}
+              <Link href="/legal/privacy" className="text-clay hover:underline" target="_blank">
+                Privacy Policy
+              </Link>
+              .
+            </span>
+          </label>
           <Button
             onClick={submit}
-            disabled={busy || !email.trim() || password.length < 6}
+            disabled={busy || !email.trim() || password.length < 6 || !consent}
             className="w-full"
           >
             {busy ? "Creating account…" : "Create account"}
