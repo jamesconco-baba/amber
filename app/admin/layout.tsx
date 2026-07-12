@@ -7,7 +7,7 @@ import { AdminShell } from "@/components/admin/admin-shell";
 // still no data — every /api/admin/* route re-checks independently). Belt and suspenders.
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const admin = await requireAdmin();
-  if (!admin) redirect("/signin");
+  if (!admin) redirect("/signin?next=/admin");
 
   return <AdminShell email={admin.email}>{children}</AdminShell>;
 }

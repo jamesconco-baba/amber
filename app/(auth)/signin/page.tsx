@@ -2,13 +2,15 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { getSupabase } from "@/lib/supabase/client";
 import { AuthShell } from "@/components/auth-shell";
 import { Button, Field, inputClass } from "@/components/ui";
 
 export default function SignIn() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const next = searchParams.get("next");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
@@ -59,6 +61,12 @@ export default function SignIn() {
         .eq("id", uid)
         .maybeSingle();
       onboarded = Boolean(prof?.onboarded);
+    }
+    // If we were sent here from a specific page (e.g. /admin), go back there once
+    // signed in — otherwise fall back to onboarding-if-needed, then the vault.
+    if (next && onboarded) {
+      router.push(next);
+      return;
     }
     router.push(onboarded ? "/dashboard" : "/onboarding");
   };
