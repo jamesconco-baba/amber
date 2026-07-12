@@ -191,3 +191,59 @@ links (with a `/claim/[token]` landing). To enable it, run
 [`supabase/schema-inheritance.sql`](./supabase/schema-inheritance.sql) in your Supabase SQL
 Editor (after the original `schema.sql`). The complete target schema for the whole platform
 is in [`supabase/schema-full.sql`](./supabase/schema-full.sql) for reference.
+
+## Admin dashboard (`/admin`)
+
+A separate, role-gated dashboard for monitoring growth: total/new users, onboarding rate,
+memories preserved, scheduled messages, feature adoption (Vault, Messenger, Legacy Assistant,
+Family Tree), and — once PostHog is connected — landing page traffic (pageviews, top pages,
+time on page, unique visitors).
+
+It's deliberately **not** at the path you'd first guess — `/dashboard` was already taken by
+the signed-in user's own home screen (see `app/(app)/dashboard`), so the admin view lives at
+`/admin` instead, as a sibling route outside the regular app shell.
+
+### Setup
+
+1. Run [`supabase/migration_admin.sql`](./supabase/migration_admin.sql) in the SQL Editor. It
+   adds an `is_admin` flag to `profiles` and a few indexes the growth charts need.
+2. Add `SUPABASE_SERVICE_ROLE_KEY` to `.env.local` and to Vercel (Supabase → Project Settings
+   → API → `service_role`). This is what lets the dashboard read across every user's data —
+   regular RLS policies stay untouched and still fully protect the app itself.
+3. Make yourself an admin — run this once in the SQL Editor with your own email:
+   ```sql
+   update public.profiles set is_admin = true
+     where id = (select id from auth.users where email = 'you@theamberapp.com');
+   ```
+4. Sign in and visit `/admin`. The Overview, Users, and Feature Usage pages work immediately
+   from your existing Supabase data — no further setup needed.
+5. **Optional — for the Traffic page:** create a free project at
+   [posthog.com](https://posthog.com), then add to `.env.local` / Vercel:
+   ```
+   NEXT_PUBLIC_POSTHOG_KEY=phc_...
+   NEXT_PUBLIC_POSTHOG_HOST=https://us.i.posthog.com
+   POSTHOG_PERSONAL_API_KEY=phx_...
+   POSTHOG_PROJECT_ID=12345
+   ```
+   The first two enable event capture app-wide (pageviews, time on page, and feature events
+   like `memory_created` and `message_scheduled` — see `lib/analytics/events.ts` for the full
+   list). The last two are a read-only key the dashboard uses server-side to query aggregate
+   traffic; they never reach the browser.
+
+### How access control works
+
+Two independent checks, both server-side (see `lib/admin-auth.ts`):
+- `app/admin/layout.tsx` is a Server Component that redirects to `/signin` if you're not a
+  signed-in admin — this keeps the dashboard shell itself from ever rendering for anyone else.
+- Every `app/api/admin/*` route re-checks independently before touching data. This matters
+  because these routes use the **service-role client** (`lib/supabase/admin.ts`), which
+  bypasses row-level security by design — the route-level check is the actual access-control
+  boundary for that data, not RLS.
+
+### Security notes
+
+- `SUPABASE_SERVICE_ROLE_KEY` and `POSTHOG_PERSONAL_API_KEY` must **never** be prefixed with
+  `NEXT_PUBLIC_` or referenced from a Client Component — both are guarded with the
+  `server-only` package, which throws a build error if that ever happens by mistake.
+- Promoting/demoting admins (`/api/admin/promote`) refuses to let the last remaining admin
+  demote themselves, so you can't accidentally lock everyone out.

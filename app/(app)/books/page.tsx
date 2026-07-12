@@ -4,6 +4,8 @@ import { useMemo, useState } from "react";
 import { useStore } from "@/lib/store";
 import { PageHeader, Card, Button, EmptyState } from "@/components/ui";
 import { buildCorpus } from "@/lib/ai/corpus";
+import { capture } from "@/lib/analytics/posthog-client";
+import { EVENTS } from "@/lib/analytics/events";
 
 // Minimal, safe markdown → elements (headings, emphasis, paragraphs). No raw HTML.
 function renderMarkdown(md: string) {
@@ -77,6 +79,7 @@ export default function Books() {
       }
       if (!res.ok) throw new Error(json.error || "Failed");
       setMarkdown(json.markdown);
+      capture(EVENTS.BOOK_GENERATED);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Something went wrong.");
     } finally {

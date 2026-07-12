@@ -21,6 +21,8 @@ import {
   FamilyMember,
 } from "./types";
 import { typeFromMime } from "./media";
+import { capture, identify, resetIdentity } from "./analytics/posthog-client";
+import { EVENTS } from "./analytics/events";
 
 // ---------------------------------------------------------------------------
 // Supabase-backed store.
@@ -355,6 +357,14 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId, ready]);
 
+  // Tie behavioral events to the real account once we know who's signed in, so the
+  // Traffic page (pre-signup) and Feature Usage page (post-signup) can be joined later.
+  useEffect(() => {
+    if (userId) identify(userId, { email: emailRef.current || undefined });
+    else resetIdentity();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId]);
+
   const api: StoreShape = useMemo(() => {
     const requireAuth = () => {
       if (!supabase || !userId) throw new Error("Not signed in");
@@ -384,6 +394,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       finishOnboarding: async () => {
         const { supabase, userId } = requireAuth();
         await supabase.from("profiles").upsert({ id: userId, onboarded: true });
+        capture(EVENTS.ONBOARDING_COMPLETED);
         await refresh();
       },
       addBeneficiary: async (b, avatarDataUrl) => {
@@ -402,6 +413,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           avatar_path,
         });
         if (error) throw error;
+        capture(EVENTS.BENEFICIARY_ADDED);
         await refresh();
       },
       updateBeneficiary: async (id, patch, avatarDataUrl) => {
@@ -440,6 +452,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           media: mediaRows,
         });
         if (error) throw error;
+        capture(EVENTS.MEMORY_CREATED, { type: c.type, has_prompt: Boolean(c.promptId) });
         await refresh();
       },
       updateContent: async (id, patch) => {
@@ -478,6 +491,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           milestone: m.milestone ?? null,
           status: m.status,
         });
+        capture(EVENTS.MESSAGE_SCHEDULED, { trigger: m.trigger });
         await refresh();
       },
       updateMessage: async (id, patch) => {
@@ -508,6 +522,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           beneficiary_id: f.beneficiaryId ?? null,
           content_ids: f.contentIds ?? [],
         });
+        capture(EVENTS.FAMILY_MEMBER_ADDED);
         await refresh();
       },
       updateFamilyMember: async (id, patch) => {

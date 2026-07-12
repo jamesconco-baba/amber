@@ -11,12 +11,17 @@ import {
   MockScheduled,
   MockAssistant,
 } from "@/components/landing-mocks";
+import { capture } from "@/lib/analytics/posthog-client";
+import { EVENTS } from "@/lib/analytics/events";
 
 export default function Landing() {
   const { session, ready } = useStore();
   const router = useRouter();
   const signedIn = ready && !!session;
-  const enter = () => router.push(signedIn ? "/dashboard" : "/signup");
+  const enter = (location: string) => {
+    if (!signedIn) capture(EVENTS.LANDING_CTA_CLICKED, { location });
+    router.push(signedIn ? "/dashboard" : "/signup");
+  };
 
   return (
     <main className="bg-parchment">
@@ -50,7 +55,7 @@ export default function Landing() {
               they&apos;ll matter most.
             </p>
             <div className="mt-8 flex flex-wrap items-center gap-3">
-              <Button onClick={enter}>{signedIn ? "Open my vault" : "Start preserving"}</Button>
+              <Button onClick={() => enter("hero")}>{signedIn ? "Open my vault" : "Start preserving"}</Button>
               {!signedIn && (
                 <Button variant="outline" onClick={() => router.push("/signin")}>
                   Sign in
@@ -173,7 +178,7 @@ export default function Landing() {
           Preserve one memory this week. It costs nothing to start.
         </p>
         <div className="mt-8 flex justify-center">
-          <Button onClick={enter}>{signedIn ? "Open my vault" : "Start preserving"}</Button>
+          <Button onClick={() => enter("bottom")}>{signedIn ? "Open my vault" : "Start preserving"}</Button>
         </div>
         <p className="mt-4 text-sm text-sage">Preserve · Schedule · Pass on</p>
       </section>

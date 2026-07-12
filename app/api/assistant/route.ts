@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getAnthropic, MODEL, textOf, parseJson } from "@/lib/ai/anthropic";
+import { createServerSupabase } from "@/lib/supabase/server";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -126,6 +127,36 @@ For "approved", echo the draft answer unchanged in "answer".`;
 
   const finalAnswer = guardian?.answer?.trim() || draft.answer;
   const status = guardian?.status ?? "approved";
+
+  // Best-effort usage log — never blocks the response. Powers the admin dashboard's
+  // Feature Usage page (assistant queries over time, guardian outcomes).
+  try {
+    const supabase = createServerSupabase();
+    if (supabase) {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (user) {
+        // draft.sourceRefs holds handles like "S1"; source_ids is uuid[], so resolve
+        // each handle back to the real source id via the ref -> id map the client sent.
+        const refToId = new Map(sources.map((s) => [s.ref, s.id]));
+        const sourceIds = (draft.sourceRefs ?? [])
+          .map((ref) => refToId.get(ref))
+          .filter((id): id is string => Boolean(id));
+        await supabase.from("ai_interactions").insert({
+          user_id: user.id,
+          role: audience,
+          query: question,
+          answer: finalAnswer,
+          source_ids: sourceIds,
+          guardian_status: status,
+          guardian_reason: guardian?.reason ?? null,
+        });
+      }
+    }
+  } catch {
+    // Logging is non-critical — never fail the user-facing request over it.
+  }
 
   return NextResponse.json({
     answer: finalAnswer,

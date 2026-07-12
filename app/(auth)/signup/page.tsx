@@ -6,6 +6,8 @@ import { useRouter } from "next/navigation";
 import { getSupabase } from "@/lib/supabase/client";
 import { AuthShell } from "@/components/auth-shell";
 import { Button, Field, inputClass } from "@/components/ui";
+import { capture } from "@/lib/analytics/posthog-client";
+import { EVENTS } from "@/lib/analytics/events";
 
 export default function SignUp() {
   const router = useRouter();
@@ -38,6 +40,7 @@ export default function SignUp() {
       setError(error.message);
       return;
     }
+    capture(EVENTS.SIGNUP_COMPLETED, { email_confirmation_required: !data.session });
     // If the project requires email confirmation, there's no session yet.
     if (data.session) router.push("/onboarding");
     else setCheckEmail(true);

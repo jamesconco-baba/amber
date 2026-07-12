@@ -5,6 +5,8 @@ import { useStore } from "@/lib/store";
 import { PageHeader, Card, Button, EmptyState, inputClass } from "@/components/ui";
 import { Waveform } from "@/components/brand";
 import { buildCorpus, Source } from "@/lib/ai/corpus";
+import { capture } from "@/lib/analytics/posthog-client";
+import { EVENTS } from "@/lib/analytics/events";
 
 interface Turn {
   role: "user" | "assistant";
@@ -34,6 +36,7 @@ export default function Assistant() {
     setTurns((t) => [...t, { role: "user", text: question }]);
     setQ("");
     setBusy(true);
+    capture(EVENTS.ASSISTANT_QUERY_SENT);
     try {
       const res = await fetch("/api/assistant", {
         method: "POST",

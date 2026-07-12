@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { StoreProvider } from "@/lib/store";
+import { AnalyticsProvider } from "@/components/analytics-provider";
 
 export const metadata: Metadata = {
   title: "Amber — Voice beyond time",
@@ -20,7 +21,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         />
       </head>
       <body className="font-sans antialiased">
-        <StoreProvider>{children}</StoreProvider>
+        <AnalyticsProvider>
+          <StoreProvider>{children}</StoreProvider>
+        </AnalyticsProvider>
       </body>
     </html>
   );
